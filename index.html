@@ -1,139 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Simple Dash Game</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jumping Dash Game</title>
     <style>
-        /* --- CSS Start --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #222; /* Darker background */
-            color: white;
-            overflow: hidden; /* Hide scrollbars */
-            font-family: sans-serif;
-            margin: 0;
+            background-color: #f0f0f0;
         }
 
-        #container {
-            text-align: center;
-        }
-
-        #game-area {
-            width: 800px;
-            height: 200px;
-            border: 2px solid white;
-            background-color: #333; /* Darker game area */
+        .game-container {
             position: relative;
-            overflow: hidden; /* Keep elements inside */
-            margin: 20px auto; /* Center horizontally */
+            width: 400px;
+            height: 200px;
+            overflow: hidden;
+            border: 2px solid #333;
         }
 
-        #player {
+        .player {
+            position: absolute;
+            bottom: 50px;
+            left: 50px;
             width: 30px;
             height: 30px;
-            background-color: #00ffff; /* Cyan player */
+            background-color: #3498db;
+        }
+
+        .ground {
             position: absolute;
             bottom: 0;
-            left: 50px;
-            border-radius: 5px; /* Slightly rounded */
-            z-index: 10; /* Ensure player is above obstacles */
+            width: 100%;
+            height: 20px;
+            background-color: #2ecc71;
         }
-
-        .obstacle {
-            width: 25px;
-            height: 25px;
-            background-color: #ff4444; /* Red obstacles */
-            position: absolute;
-            bottom: 0;
-            right: -30px; /* Start off-screen */
-            border-top: 5px solid #ff8888; /* Highlight top */
-        }
-
-        #score {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-
-        #message {
-            font-size: 20px;
-            color: yellow;
-            height: 30px; /* Reserve space */
-        }
-         /* Add animation for obstacle movement */
-        @keyframes moveObstacle {
-            0% { transform: translateX(0px); }
-            100% { transform: translateX(-860px); } /* Move across and off screen */
-        }
-        /* --- CSS End --- */
     </style>
 </head>
 <body>
-    <div id="container">
-        <h1>Simple Dash</h1>
-        <div id="score">Score: 0</div>
-        <div id="message">Press Space or Click to Jump!</div>
-        <div id="game-area">
-            <div id="player"></div>
-            </div>
-    </div>
-
+    <main class="game-container">
+        <div class="player" id="player"></div>
+        <div class="ground" id="ground"></div>
+    </main>
     <script>
-        // --- JavaScript Start ---
         const player = document.getElementById('player');
-        const gameArea = document.getElementById('game-area');
-        const scoreDisplay = document.getElementById('score');
-        const messageDisplay = document.getElementById('message');
-
         let isJumping = false;
-        let playerBottom = 0; // Base position
-        let gravity = 0.9;
-        let jumpForce = 15;
-        let velocityY = 0;
-        let score = 0;
-        let gameInterval;
-        let obstacleInterval;
-        let gameSpeed = 4; // Initial speed (lower is faster animation duration)
-        let obstacleSpeed = gameSpeed;
-        let isGameOver = false;
-        let obstacleCounter = 0; // To increase difficulty
 
-        // --- Game Loop ---
-        function gameLoop() {
-            if (isGameOver) return;
-
-            // Apply gravity
-            velocityY -= gravity;
-            playerBottom += velocityY;
-
-            // Prevent falling through floor
-            if (playerBottom <= 0) {
-                playerBottom = 0;
-                velocityY = 0;
-                isJumping = false;
-            }
-
-            // Update player position
-            player.style.bottom = playerBottom + 'px';
-
-            // Move and check obstacles
-            moveObstacles();
-            checkCollisions();
-
-            requestAnimationFrame(gameLoop); // Keep the loop running efficiently
-        }
-
-        // --- Player Jump ---
-        function jump() {
-            if (isGameOver) {
-                restartGame();
-                return;
-            }
+        document.addEventListener('click', () => {
             if (!isJumping) {
-                velocityY = jumpForce;
-                isJumping = true;
+                jump();
             }
+        });
+
+        function jump() {
+            isJumping = true;
+            let jumpHeight = 0;
+            const jumpInterval = setInterval(() => {
+                if (jumpHeight < 100) {
+                    player.style.bottom = `${parseInt(player.style.bottom) + 5}px`;
+                    jumpHeight += 5;
+                } else {
+                    clearInterval(jumpInterval);
+                    fall();
+                }
+            }, 20);
         }
 
- ⬤
+        function fall() {
+            const fallInterval = setInterval(() => {
+                if (parseInt(player.style.bottom) > 50) {
+                    player.style.bottom = `${parseInt(player.style.bottom) - 5}px`;
+                } else {
+                    clearInterval(fallInterval);
+                    isJumping = false;
+                }
+            }, 20);
+        }
+    </script>
+</body>
+</html>
