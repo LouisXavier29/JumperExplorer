@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Dash Game</title>
+    <style>
+        /* --- CSS Start --- */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222; /* Darker background */
+            color: white;
+            overflow: hidden; /* Hide scrollbars */
+            font-family: sans-serif;
+            margin: 0;
+        }
+
+        #container {
+            text-align: center;
+        }
+
+        #game-area {
+            width: 800px;
+            height: 200px;
+            border: 2px solid white;
+            background-color: #333; /* Darker game area */
+            position: relative;
+            overflow: hidden; /* Keep elements inside */
+            margin: 20px auto; /* Center horizontally */
+        }
+
+        #player {
+            width: 30px;
+            height: 30px;
+            background-color: #00ffff; /* Cyan player */
+            position: absolute;
+            bottom: 0;
+            left: 50px;
+            border-radius: 5px; /* Slightly rounded */
+            z-index: 10; /* Ensure player is above obstacles */
+        }
+
+        .obstacle {
+            width: 25px;
+            height: 25px;
+            background-color: #ff4444; /* Red obstacles */
+            position: absolute;
+            bottom: 0;
+            right: -30px; /* Start off-screen */
+            border-top: 5px solid #ff8888; /* Highlight top */
+        }
+
+        #score {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        #message {
+            font-size: 20px;
+            color: yellow;
+            height: 30px; /* Reserve space */
+        }
+         /* Add animation for obstacle movement */
+        @keyframes moveObstacle {
+            0% { transform: translateX(0px); }
+            100% { transform: translateX(-860px); } /* Move across and off screen */
+        }
+        /* --- CSS End --- */
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Simple Dash</h1>
+        <div id="score">Score: 0</div>
+        <div id="message">Press Space or Click to Jump!</div>
+        <div id="game-area">
+            <div id="player"></div>
+            </div>
+    </div>
+
+    <script>
+        // --- JavaScript Start ---
+        const player = document.getElementById('player');
+        const gameArea = document.getElementById('game-area');
+        const scoreDisplay = document.getElementById('score');
+        const messageDisplay = document.getElementById('message');
+
+        let isJumping = false;
+        let playerBottom = 0; // Base position
+        let gravity = 0.9;
+        let jumpForce = 15;
+        let velocityY = 0;
+        let score = 0;
+        let gameInterval;
+        let obstacleInterval;
+        let gameSpeed = 4; // Initial speed (lower is faster animation duration)
+        let obstacleSpeed = gameSpeed;
+        let isGameOver = false;
+        let obstacleCounter = 0; // To increase difficulty
+
+        // --- Game Loop ---
+        function gameLoop() {
+            if (isGameOver) return;
+
+            // Apply gravity
+            velocityY -= gravity;
+            playerBottom += velocityY;
+
+            // Prevent falling through floor
+            if (playerBottom <= 0) {
+                playerBottom = 0;
+                velocityY = 0;
+                isJumping = false;
+            }
+
+            // Update player position
+            player.style.bottom = playerBottom + 'px';
+
+            // Move and check obstacles
+            moveObstacles();
+            checkCollisions();
+
+            requestAnimationFrame(gameLoop); // Keep the loop running efficiently
+        }
+
+        // --- Player Jump ---
+        function jump() {
+            if (isGameOver) {
+                restartGame();
+                return;
+            }
+            if (!isJumping) {
+                velocityY = jumpForce;
+                isJumping = true;
+            }
+        }
+
+        // --- Obstacle Handling ---
+        function createObstacle() {
+            if (isGameOver) return;
+
+            const obstacle = document.createElement('div');
+            obstacle.classList.add('obstacle');
+            obstacle.style.right = '-30px'; // Start off-screen
+
+            // Random height variation (simple example)
+            const heightVariation = Math.random() < 0.3 ? 30 : 25; // 30% chance of taller obstacle
+            obstacle.style.height = heightVariation + 'px';
+
+            gameArea.appendChild(obstacle);
+
+            // Set animation - obstacleSpeed controls duration (lower is faster)
+            obstacle.style.animation = `moveObstacle ${obstacleSpeed}s linear`;
+
+            // Remove obstacle after it moves off-screen + buffer
+            setTimeout(() => {
+                if (obstacle.parentNode === gameArea) {
+                    gameArea.removeChild(obstacle);
+                    if (!isGameOver) {
+                        score++; // Increment score when obstacle safely passes
+                        scoreDisplay.textContent = 'Score: ' + score;
+                        updateDifficulty();
+                    }
+                }
+            }, obstacleSpeed * 1000); // Match animation duration
+        }
+
+        function moveObstacles() {
+             // The CSS animation handles the visual movement.
+             // We might add JS-based movement later if needed for more complex logic.
+        }
+
+        function updateDifficulty() {
+            obstacleCounter++;
+            // Increase speed every 5 obstacles (make animation faster)
+            if (obstacleCounter % 5 === 0 && obstacleSpeed > 1.5) {
+                obstacleSpeed -= 0.2;
+                console.log("Increasing speed, new duration: ", obstacleSpeed);
+                 // We would need to update intervals & potentially re-apply animations
+                 // For simplicity here, new obstacles will just spawn with faster animation.
+                 // Also adjust spawn rate
+                 clearInterval(obstacleInterval);
+                 obstacleInterval = setInterval(createObstacle, Math.max(800, 2500 * (obstacleSpeed / gameSpeed))); // Faster spawn
+            }
+        }
+
+        // --- Collision Detection ---
+        function checkCollisions() {
+            const obstacles = document.querySelectorAll('.obstacle');
+            const playerRect = player.getBoundingClientRect();
+
+            obstacles.forEach(obstacle => {
+                const obstacleRect = obstacle.getBoundingClientRect();
+
+                // Basic AABB collision check
+                if (
+                    playerRect.left < obstacleRect.right &&
+                    playerRect.right > obstacleRect.left &&
+                    playerRect.top < obstacleRect.bottom &&
+                    playerRect.bottom > obstacleRect.top
+                ) {
+                    gameOver();
+                }
+            });
+        }
+
+        function gameOver() {
+            if(isGameOver) return; // Prevent multiple calls
+            isGameOver = true;
+            messageDisplay.textContent = 'Game Over! Click or Space to Restart.';
+            messageDisplay.style.color = 'red';
+            console.log("Game Over! Final Score:", score);
+            // Stop creating obstacles
+            clearInterval(obstacleInterval);
+            // Stop animations (optional, could just let them finish)
+            const currentObstacles = document.querySelectorAll('.obstacle');
+            currentObstacles.forEach(obs => obs.style.animationPlayState = 'paused');
+        }
+
+        function startGame() {
+            // Reset variables
+            isGameOver = false;
+            isJumping = false;
+            playerBottom = 0;
+            velocityY = 0;
+            score = 0;
+            obstacleCounter = 0;
+            obstacleSpeed = gameSpeed; // Reset speed
+            player.style.bottom = '0px';
+            scoreDisplay.textContent = 'Score: 0';
+            messageDisplay.textContent = '';
+            messageDisplay.style.color = 'yellow';
+
+            // Clear existing obstacles
+            const existingObstacles = document.querySelectorAll('.obstacle');
+            existingObstacles.forEach(obs => gameArea.removeChild(obs));
+
+            // Start intervals
+            obstacleInterval = setInterval(createObstacle, 2000); // Initial spawn rate
+            requestAnimationFrame(gameLoop); // Start the main game loop
+        }
+
+         function restartGame() {
+            if (isGameOver) {
+                startGame();
+            }
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space' || event.code === 'ArrowUp') {
+                jump();
+            }
+        });
+        document.addEventListener('click', jump); // Also jump on click/tap
+
+        // --- Initial Call ---
+        // Wait for resources to load potentially
+        window.onload = () => {
+             messageDisplay.textContent = 'Press Space or Click to Start!';
+             // Don't start game until first jump
+        }
+
+        // Modified jump to start game on first input
+        const originalJump = jump;
+        jump = function() {
+            if (document.getElementById('message').textContent.includes('Start')) {
+                startGame(); // Start the game on the first jump
+            }
+            originalJump(); // Call the original jump logic
+        }
+
+        // --- JavaScript End ---
+    </script>
+</body>
+</html>
